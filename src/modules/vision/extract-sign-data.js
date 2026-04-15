@@ -132,6 +132,8 @@ function buildGroqInput({ rawText, context, ocrLines = [] }) {
     `OCR text:\n${rawText}`,
     lines ? `OCR lines:\n${lines}` : "OCR lines: none",
     `Context: city=${context.city || "unknown"}, state=${context.state || "unknown"}, country=${context.country || "unknown"}, vehicle=${context.vehicleType}.`,
+    "Remove obvious OCR garbage, duplicated fragments, random symbols, and non-parking words before structuring the signs.",
+    "Prefer short cleaned sign text that keeps only meaningful parking restrictions, days, times, arrows, permit terms, and duration limits.",
     "Split stacked signs when possible. Preserve arrow direction if visible in OCR text such as left, right, ←, →, or both.",
     "Only structure what the OCR text supports. If uncertain, lower confidence and explain uncertainty in notes."
   ].join("\n\n");
@@ -153,6 +155,7 @@ export async function extractSignData({ ocrText, manualSignText, ocrLines, ocrCo
     model: config.groqModel,
     instructions: [
       "You convert OCR text from parking signs into structured sign objects.",
+      "Denoise the OCR first by removing obvious gibberish and random words that are not part of the sign.",
       "Do not decide legality. Only structure sign text, arrows, icons, and uncertainty.",
       "Return strict JSON only."
     ].join(" "),

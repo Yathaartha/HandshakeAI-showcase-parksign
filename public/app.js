@@ -15,6 +15,8 @@ const feedbackCorrection = document.querySelector("#feedbackCorrection");
 const ocrStatus = document.querySelector("#ocrStatus");
 const ocrConfidenceLabel = document.querySelector("#ocrConfidenceLabel");
 const imageSizeLabel = document.querySelector("#imageSizeLabel");
+const manualSignTextField = document.querySelector("#manualSignText");
+const parkingDateTimeField = document.querySelector("#parkingDateTime");
 
 const MAX_UPLOAD_BYTES = Math.round(4.5 * 1024 * 1024);
 const OCR_MAX_DIMENSION = 1600;
@@ -29,9 +31,11 @@ let currentOcr = {
 };
 let tesseractWorkerPromise = null;
 
-document.querySelector("#manualSignText").addEventListener("input", () => {
+manualSignTextField.addEventListener("input", () => {
   currentOcr.userEdited = true;
 });
+
+initializeParkingDateTime();
 
 imageInput.addEventListener("change", async (event) => {
   const [file] = event.target.files || [];
@@ -40,6 +44,7 @@ imageInput.addEventListener("change", async (event) => {
     return;
   }
 
+  resetUploadState();
   ocrStatus.textContent = "Preparing image...";
   imageSizeLabel.textContent = formatBytes(file.size);
 
@@ -143,9 +148,8 @@ async function runBrowserOcr(imageDataUrl) {
       userEdited: currentOcr.userEdited
     };
 
-    const manualField = document.querySelector("#manualSignText");
-    if (!currentOcr.userEdited || !manualField.value.trim()) {
-      manualField.value = joinedText;
+    if (!currentOcr.userEdited || !manualSignTextField.value.trim()) {
+      manualSignTextField.value = joinedText;
       currentOcr.userEdited = false;
     }
 
@@ -296,6 +300,30 @@ function renderResult(result) {
   ].join("");
 }
 
+function resetUploadState() {
+  currentAnalysisId = "";
+  currentOcr = {
+    text: "",
+    confidence: 0,
+    lines: [],
+    userEdited: false
+  };
+  manualSignTextField.value = "";
+  feedbackCorrection.value = "";
+  feedbackStatus.textContent = "";
+  ocrConfidenceLabel.textContent = "N/A";
+  emptyState.hidden = false;
+  results.hidden = true;
+}
+
+function initializeParkingDateTime() {
+  if (parkingDateTimeField.value) {
+    return;
+  }
+
+  parkingDateTimeField.value = formatDateTimeLocal(new Date());
+}
+
 function valueOf(selector) {
   return document.querySelector(selector)?.value?.trim() || "";
 }
@@ -345,6 +373,16 @@ function formatBytes(bytes) {
   }
 
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatDateTimeLocal(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function capitalize(value) {
