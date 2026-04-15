@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Parkwise AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Production-style parking assistant</p>
+          <h1>Upload a parking sign and get a plain-English answer.</h1>
+          <p class="hero-text">
+            Parkwise AI uses browser-side Tesseract OCR plus Groq reasoning to keep costs low while still turning dense parking signage into a usable decision.
+          </p>
+          <div class="hero-pills">
+            <span>Tesseract.js OCR</span>
+            <span>Deterministic rule reasoning</span>
+            <span>Groq + Vercel-ready backend</span>
+          </div>
+        </div>
+        <div class="hero-panel">
+          <div class="mini-card">
+            <span class="mini-label">Sample output</span>
+            <strong>Parking Allowed: No</strong>
+            <p>Street cleaning is active Tuesday from 10:00 AM to 12:00 PM, based on OCR text and your parking time.</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel intake-panel">
+          <div class="section-heading">
+            <p class="step-tag">Step 1</p>
+            <h2>Structured Intake</h2>
+          </div>
+
+          <label class="upload-zone" for="imageInput" id="uploadZone">
+            <input type="file" id="imageInput" accept="image/*" />
+            <span class="upload-title">Drop a parking sign photo or click to browse</span>
+            <span class="upload-subtitle">Runs Tesseract OCR in your browser first, then sends extracted text to Groq</span>
+            <img id="previewImage" alt="Uploaded preview" hidden />
+          </label>
+          <div class="ocr-box">
+            <div class="ocr-row">
+              <strong>OCR status</strong>
+              <span id="ocrStatus">Waiting for image</span>
+            </div>
+            <div class="ocr-row">
+              <strong>OCR confidence</strong>
+              <span id="ocrConfidenceLabel">N/A</span>
+            </div>
+            <div class="ocr-row">
+              <strong>Upload size</strong>
+              <span id="imageSizeLabel">N/A</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              <span>OCR text / manual correction</span>
+              <textarea id="manualSignText" rows="4" placeholder="Auto-filled from Tesseract OCR. You can correct it before analysis."></textarea>
+            </label>
+            <label>
+              <span>Parking attempt date/time</span>
+              <input id="parkingDateTime" type="datetime-local" />
+            </label>
+            <label>
+              <span>City</span>
+              <input id="city" type="text" placeholder="San Francisco" />
+            </label>
+            <label>
+              <span>State / Region</span>
+              <input id="state" type="text" placeholder="CA" />
+            </label>
+            <label>
+              <span>Country</span>
+              <input id="country" type="text" placeholder="USA" />
+            </label>
+            <label>
+              <span>Vehicle type</span>
+              <select id="vehicleType">
+                <option value="car">Car</option>
+                <option value="motorcycle">Motorcycle</option>
+                <option value="commercial">Commercial</option>
+                <option value="accessible">Accessible vehicle</option>
+              </select>
+            </label>
+            <label>
+              <span>Planned parking duration (minutes)</span>
+              <input id="plannedDurationMinutes" type="number" min="0" step="15" value="60" />
+            </label>
+            <label>
+              <span>Permit / placard</span>
+              <select id="permits">
+                <option value="">None</option>
+                <option value="residential">Residential permit</option>
+                <option value="accessible">Accessible placard</option>
+                <option value="commercial">Commercial permit</option>
+              </select>
+            </label>
+            <label>
+              <span>Image quality</span>
+              <select id="imageQuality">
+                <option value="">Unknown</option>
+                <option value="clear">Clear</option>
+                <option value="blurry">Blurry</option>
+              </select>
+            </label>
+          </div>
+
+          <button class="primary-button" id="analyzeButton">Interpret Sign</button>
+          <p class="helper-text">Cheap path: OCR runs locally in the browser; only extracted text and context are sent to Groq.</p>
+        </section>
+
+        <section class="panel results-panel">
+          <div class="section-heading">
+            <p class="step-tag">Step 2</p>
+            <h2>Interpretation</h2>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <p>Upload a sign image to see the parking status card, parsed rules, timeline, confidence, and reasoning trace.</p>
+          </div>
+
+          <div id="results" hidden>
+            <div class="status-card" id="statusCard"></div>
+            <div class="results-grid">
+              <div class="card">
+                <h3>Plain-English Explanation</h3>
+                <p id="explanationText"></p>
+              </div>
+              <div class="card">
+                <h3>Recommendations</h3>
+                <ul id="recommendationList" class="list"></ul>
+              </div>
+              <div class="card">
+                <h3>Detected Signs</h3>
+                <div id="detectedSigns" class="stack"></div>
+              </div>
+              <div class="card">
+                <h3>Normalized Rules</h3>
+                <div id="ruleList" class="stack"></div>
+              </div>
+              <div class="card wide-card">
+                <h3>Timeline View</h3>
+                <div id="timeline" class="timeline"></div>
+              </div>
+              <div class="card">
+                <h3>Reliability</h3>
+                <div id="reliabilityBox" class="stack"></div>
+              </div>
+              <div class="card">
+                <h3>Feedback</h3>
+                <div class="feedback-row">
+                  <button class="secondary-button" data-feedback="yes">Yes, this looks right</button>
+                  <button class="secondary-button" data-feedback="no">No, needs correction</button>
+                </div>
+                <textarea id="feedbackCorrection" rows="3" placeholder="Optional correction"></textarea>
+                <p id="feedbackStatus" class="helper-text"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+  </html>

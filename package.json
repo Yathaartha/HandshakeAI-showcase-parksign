@@ -1,0 +1,14 @@
+{
+  "name": "parking-sign-assistant",
+  "version": "1.0.0",
+  "description": "Production-style parking sign interpretation assistant using browser OCR, Groq reasoning, and deterministic parking-rule logic.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
